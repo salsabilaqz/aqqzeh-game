@@ -1,0 +1,389 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>عكاكزة | لعبة السوالف</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#040814 url('background.png') center center / cover fixed no-repeat;color:white;font-family:Arial,sans-serif;min-height:100vh}
+button,input,textarea{font:inherit}
+button{cursor:pointer;transition:.2s}
+button:hover{filter:brightness(1.15)}
+#main-content{display:none}
+header{text-align:center;padding:22px 12px}
+header h1{color:#00d2ff;font-size:36px;text-shadow:0 0 15px #0076ff}
+header p{color:#b9cce5}
+.container{max-width:1100px;margin:auto;padding:15px}
+.socials{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+.socials a{color:white;text-decoration:none;background:#10223b;border:1px solid #15518a;padding:10px 15px;border-radius:10px}
+.notice{background:#0d2038;border:1px solid #14518a;border-radius:12px;padding:13px;margin-bottom:18px;text-align:center;color:#bcefff;overflow-wrap:anywhere}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:18px}
+.panel{background:rgba(11,23,41,.88);backdrop-filter:blur(4px);border:1px solid #14518a;border-radius:16px;padding:20px;min-width:0}
+.game{text-align:center;min-height:260px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.story{width:100%;min-height:120px;padding:20px;background:rgba(7,16,32,.88);border:1px dashed #00a9df;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:23px;line-height:1.7;overflow-wrap:anywhere}
+.status{min-height:35px;margin:14px;color:#ffd166;font-weight:bold}
+.buttons{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:8px}
+button{border:0;border-radius:9px;padding:12px 16px;font-weight:bold}
+.blue{background:#087cff;color:white}
+.green{background:#20c878;color:#061b13}
+.red{background:#ff5264;color:white}
+.gold{background:#ffbd45;color:#211400}
+.gray{background:#263951;color:white}
+form{display:grid;gap:12px;margin-top:22px}
+input,textarea{width:100%;padding:12px;border-radius:8px;border:1px solid #20558b;background:#040d1b;color:white;outline:none}
+textarea{min-height:100px;resize:vertical}
+input:focus,textarea:focus{border-color:#00d2ff}
+.types{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.types button{border:2px solid transparent}
+.types button.selected{border-color:white}
+.submit{width:100%;background:#087cff;color:white}
+.sidebar h2{font-size:20px;color:#00d2ff;margin-top:0}
+.player-list{list-style:none;padding:0;margin:12px 0;max-height:250px;overflow:auto}
+.player-list li{padding:10px;background:#142640;border-right:3px solid #00d2ff;border-radius:7px;margin-bottom:7px;overflow-wrap:anywhere}
+.full{width:100%;margin-top:10px}
+.small{font-size:13px;color:#9bb0ca;line-height:1.7}
+footer{text-align:center;padding:25px;color:#8196b0}
+#welcomeScreen{display:none;position:fixed;inset:0;z-index:99999;background:linear-gradient(rgba(2,6,17,.72),rgba(2,6,17,.84)),url('background.png') center center / cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;color:white}
+#welcomeScreen h1{color:#00d2ff;font-size:clamp(30px,6vw,48px);text-shadow:0 0 20px #0076ff}
+#welcomeScreen p{font-size:18px;color:#c5d8f0;line-height:1.9}
+.enter-btn{margin-top:22px;padding:16px 38px;background:#087cff;color:white;border-radius:35px;font-size:21px;box-shadow:0 0 25px #087cff}
+
+/* Aqqzeh fan landing page */
+.home-top{position:absolute;top:18px;right:18px;z-index:2}
+.about-open{background:rgba(17,42,73,.92);border:1px solid #69baff;color:#fff;border-radius:14px;padding:11px 16px;box-shadow:0 8px 25px #00132b}
+.home-card{width:min(900px,100%);margin:50px auto 0;display:grid;grid-template-columns:240px minmax(0,1fr);gap:22px;align-items:center;text-align:right;background:rgba(5,17,35,.76);border:1px solid rgba(110,185,255,.45);border-radius:24px;padding:24px;box-shadow:0 25px 80px rgba(0,0,0,.35);backdrop-filter:blur(10px)}
+.home-photo{width:100%;aspect-ratio:4/5;object-fit:cover;object-position:center;border-radius:18px;border:2px solid #70baff;box-shadow:0 0 28px rgba(42,144,255,.22)}
+.home-kicker{color:#91caff;font-size:12px;letter-spacing:3px;font-weight:bold}
+.home-title{font-size:clamp(34px,6vw,58px);margin:8px 0;color:#fff;text-shadow:0 0 22px #1679e8}
+.home-desc{max-width:560px;line-height:1.9;color:#d7eaff;font-size:17px}
+.home-tags{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 22px}
+.home-tag{background:#102e50;border:1px solid #285d91;color:#d9edff;border-radius:999px;padding:7px 11px;font-size:13px}
+.home-actions{display:flex;gap:10px;flex-wrap:wrap}
+.home-enter{background:linear-gradient(135deg,#1688ff,#0758c9);color:white;padding:14px 23px;border-radius:12px;font-size:17px;box-shadow:0 7px 24px rgba(0,113,255,.28)}
+.about-screen{display:none;position:fixed;inset:0;z-index:100000;background:linear-gradient(135deg,#061327,#0a2543);color:#fff;overflow:auto;padding:24px}
+.about-inner{max-width:850px;margin:35px auto;background:rgba(11,30,53,.9);border:1px solid #2d6da5;border-radius:22px;padding:24px}
+.about-layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:24px;align-items:start}
+.about-photo{width:100%;border-radius:16px;border:2px solid #70baff}
+.about-inner h2{color:#8fcaff;font-size:30px;margin-top:0}
+.about-inner p{line-height:1.95;color:#d6e8fb}
+.about-links{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.about-links a{color:white;background:#12385f;border:1px solid #326fa8;border-radius:10px;padding:10px 14px;text-decoration:none}
+@media(max-width:650px){.home-top{top:10px;right:10px}.home-card{grid-template-columns:1fr;margin-top:64px;padding:16px;gap:14px}.home-photo{max-width:180px;aspect-ratio:1/1;margin:auto}.home-content{text-align:center}.home-tags,.home-actions{justify-content:center}.about-layout{grid-template-columns:1fr}.about-photo{max-width:220px;display:block;margin:auto}.about-inner{margin:20px auto;padding:18px}}
+
+@media(max-width:760px){.layout{grid-template-columns:1fr}header h1{font-size:29px}.panel{padding:14px}.story{font-size:20px}}
+</style>
+</head>
+
+<body>
+
+<!-- شاشة الترحيب الأولى -->
+<div id="introScreen" style="position:fixed;inset:0;z-index:100001;background:linear-gradient(rgba(2,6,17,.72),rgba(2,6,17,.86)),url('background.png') center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;color:white">
+  <div style="font-size:clamp(34px,7vw,64px);font-weight:800;color:#fff;text-shadow:0 0 22px #1688ff;margin-bottom:14px">مرحبًا عكاكزة 💙</div>
+  <p style="font-size:18px;line-height:1.9;color:#d7eaff;margin:0">أهلًا بك في عالم أكزيه</p>
+  <button class="home-enter" style="margin-top:28px;min-width:210px" onclick="enterSite()">دخول الموقع ←</button>
+</div>
+
+<!-- الصفحة الرئيسية بعد الترحيب -->
+<div id="welcomeScreen">
+  <div class="home-top"><button class="about-open" onclick="openAbout()">💙 تعريف بأكزيه</button></div>
+  <div class="home-card">
+    <img class="home-photo" src="aqqzeh-photo.png" alt="صورة أكزيه من الصورة التي أرسلها صاحب الموقع">
+    <div class="home-content">
+      <div class="home-kicker">FAN-MADE COMMUNITY</div>
+      <h1 class="home-title">عالم أكزيه</h1>
+      <p class="home-desc">أهلًا بكم في مساحة من صنع فان لأكزيه 💙<br>ألعاب شات، سوالف، ضحك وتحديات تجمع المجتمع في مكان واحد.</p>
+      <div class="home-tags"><span class="home-tag">🎮 ألعاب الشات</span><span class="home-tag">🖌️ Gartic Phone</span><span class="home-tag">🏆 جولات وتحديات</span></div>
+      <div class="home-actions"><button class="home-enter" onclick="enterGame()">دخول لعبة صدق أو كذب ←</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- صفحة تعريف أكزيه -->
+<div id="aboutScreen" class="about-screen" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+  <div style="max-width:850px;margin:0 auto"><button class="about-open" onclick="closeAbout()">← رجوع للرئيسية</button></div>
+  <div class="about-inner">
+    <div class="about-layout">
+      <img class="about-photo" src="aqqzeh-photo.png" alt="صورة أكزيه الأصلية التي أرسلها صاحب الموقع">
+      <div>
+        <div class="home-kicker">ABOUT AQQZEH</div>
+        <h2 id="aboutTitle">من هو أكزيه؟ 💙</h2>
+        <p>أكزيه صانع محتوى وبثّاث على Kick، وتدور أجواء بثوثه حول الألعاب والتفاعل مع الشات، مثل Gartic Phone والألعاب الجماعية والجولات والتحديات.</p>
+        <p>هذا الموقع مساحة من صنع أحد المعجبين للاحتفاء بأجواء البثوث ومشاركة لعبة سوالف «صدق أو كذب». الموقع غير رسمي ولا يمثل أكزيه.</p>
+        <div class="about-links"><a href="https://kick.com/aqqzeh" target="_blank" rel="noopener">قناة أكزيه على Kick ↗</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- محتوى الموقع -->
+<div id="main-content">
+<header>
+  <h1>🎮 عكاكزة</h1>
+  <p>لعبة السوالف المباشرة — صدق أو كذب؟</p>
+</header>
+
+<div class="container">
+  <section class="panel" id="partyPanel" style="margin-bottom:18px;text-align:center">
+    <h2 style="color:#00d2ff;margin-top:0">🎉 غرفة السوالف (Party)</h2>
+    <p class="small">أنشئي بارتي وشاركي كوده مع أصحابك، أو ادخلي بارتي موجودة.</p>
+    <div class="buttons" id="partyActions">
+      <button class="blue" onclick="createParty()">➕ إنشاء بارتي</button>
+      <input id="joinCode" maxlength="6" placeholder="كود البارتي" style="max-width:180px;text-transform:uppercase" />
+      <button class="green" onclick="joinParty()">دخول بارتي</button>
+    </div>
+    <div id="partyInfo" class="notice" style="margin:12px 0 0">ما دخلتي أي بارتي بعد.</div>
+    <button id="closePartyBtn" class="red full" style="display:none" onclick="closeParty()">🔒 إغلاق البارتي وحذف سوالفها</button>
+  </section>
+  <nav class="socials">
+    <a href="https://kick.com" target="_blank" rel="noopener">Kick: aqqzeh</a>
+    <a href="https://instagram.com" target="_blank" rel="noopener">Instagram: aqqzeh</a>
+    <a href="https://tiktok.com" target="_blank" rel="noopener">TikTok: aqqzeh</a>
+  </nav>
+
+  <div class="notice" id="connection">⏳ جاري الاتصال بقاعدة البيانات...</div>
+
+  <div class="layout">
+    <main class="panel">
+      <section class="game">
+        <div class="story" id="storyDisplay">أرسلي سالفة لتبدأ اللعبة! 💙</div>
+        <div class="status" id="truthStatus" aria-live="polite"></div>
+
+        <div id="voteZone" hidden>
+          <div class="buttons">
+            <button class="green" onclick="vote('صدق')">👍 صدق</button>
+            <button class="red" onclick="vote('كذب')">👎 كذب</button>
+          </div>
+          <p id="voteCount" class="small"></p>
+          <div id="voterDetails" class="notice" style="text-align:right;margin:8px 0"></div>
+          <button class="gold owner-only" id="revealBtn" onclick="revealTruth()" hidden>🔍 كشف الحقيقة (صاحب البارتي فقط)</button>
+        </div>
+      </section>
+
+      <hr style="border:0;border-top:1px solid #18304c;margin:22px 0">
+      <h2 style="color:#00d2ff;text-align:center">✍️ أرسلي سالفتك</h2>
+
+      <form id="storyForm">
+        <input id="playerName" maxlength="35" placeholder="اكتبي اسمك" required>
+        <textarea id="storyText" maxlength="1000" placeholder="اكتبي سالفتك هنا..." required></textarea>
+
+        <div class="types">
+          <button type="button" id="trueBtn" class="green" onclick="chooseType(true)">🟢 سالفة صدق</button>
+          <button type="button" id="falseBtn" class="red" onclick="chooseType(false)">🔴 سالفة تأليف</button>
+        </div>
+
+        <button class="submit" id="submitBtn" type="submit">🚀 إرسال السالفة</button>
+        <p id="formMessage" class="small" aria-live="polite"></p>
+      </form>
+    </main>
+
+    <aside class="panel sidebar">
+      <h2>👥 اللاعبون (<span id="playerCount">0</span>)</h2>
+      <ul class="player-list" id="playersList"></ul>
+      <button class="blue full owner-only" id="nextStoryBtn" onclick="nextStory()" hidden>السالفة التالية ➡️ (صاحب البارتي فقط)</button>
+      <button class="gray full" onclick="showResults()">عرض التصويتات</button>
+      <p class="small">تظهر السوالف للاعبين المتصلين بقاعدة البيانات نفسها.</p>
+    </aside>
+  </div>
+</div>
+<footer>عكاكزة © لعبة السوالف</footer>
+</div>
+
+<script>
+/* Firebase: قاعدة بيانات مشروع AqqzehGame */
+const firebaseConfig = {
+  databaseURL: "https://aqqzehgame-default-rtdb.firebaseio.com",
+  projectId: "aqqzehgame"
+};
+
+let db;
+let stories = [];
+let currentKey = null;
+let selectedType = null;
+let busy = false;
+let activeRoom = null;
+let isRoomOwner = false;
+let roomListenerRefs = [];
+let roomOwnerToken = localStorage.getItem("aqqzeh_room_owner_token") || "owner_"+Math.random().toString(36).slice(2)+Date.now().toString(36);
+localStorage.setItem("aqqzeh_room_owner_token", roomOwnerToken);
+
+function enterSite(){
+  document.getElementById("introScreen").style.display = "none";
+  document.getElementById("welcomeScreen").style.display = "flex";
+}
+function enterGame(){
+  document.getElementById("aboutScreen").style.display = "none";
+  document.getElementById("welcomeScreen").style.display = "none";
+  document.getElementById("main-content").style.display = "block";
+}
+function openAbout(){document.getElementById("aboutScreen").style.display="block";}
+function closeAbout(){document.getElementById("aboutScreen").style.display="none";}
+function setConnection(message, good=false){
+  const el=document.getElementById("connection");
+  el.textContent=message;
+  el.style.color=good?"#54f0a0":"#ffd166";
+}
+function chooseType(value){
+  selectedType=value;
+  document.getElementById("trueBtn").classList.toggle("selected",value===true);
+  document.getElementById("falseBtn").classList.toggle("selected",value===false);
+  document.getElementById("formMessage").textContent=value?"اخترتِ سالفة صدق 🟢":"اخترتِ سالفة تأليف 🔴";
+}
+function roomBase(){ return activeRoom ? db.ref("parties/"+activeRoom) : null; }
+function roomPath(child){ return "parties/"+activeRoom+"/"+child; }
+function detachRoomListeners(){
+  roomListenerRefs.forEach(x=>x.ref.off("value",x.callback));
+  roomListenerRefs=[];
+}
+function watch(ref, callback){ ref.on("value",callback,error=>{console.error(error);setConnection("❌ "+error.message);}); roomListenerRefs.push({ref,callback}); }
+function updatePartyUI(){
+  const info=document.getElementById("partyInfo");
+  const actions=document.getElementById("partyActions");
+  const close=document.getElementById("closePartyBtn");
+  const ownerControls=document.querySelectorAll(".owner-only");
+  ownerControls.forEach(el=>el.hidden=!(activeRoom && isRoomOwner));
+  if(activeRoom){
+    info.textContent="🟢 أنتِ داخل البارتي: "+activeRoom+" — شاركي الكود مع أصحابك";
+    actions.style.display="none";
+    close.style.display=isRoomOwner?"block":"none";
+  }else{
+    info.textContent="ما دخلتي أي بارتي بعد. أنشئي بارتي أو اكتبي كود أصحابك.";
+    actions.style.display="flex";
+    close.style.display="none";
+  }
+}
+function renderPlayers(){
+  const names=[...new Set(stories.map(s=>s.name).filter(Boolean))];
+  document.getElementById("playerCount").textContent=names.length;
+  const list=document.getElementById("playersList"); list.replaceChildren();
+  names.forEach(name=>{const li=document.createElement("li");li.textContent="👤 "+name;list.appendChild(li);});
+}
+function renderStory(){
+  const display=document.getElementById("storyDisplay"), status=document.getElementById("truthStatus"), zone=document.getElementById("voteZone");
+  const detail=document.getElementById("voterDetails");
+  const story=stories.find(s=>s.key===currentKey);
+  if(!activeRoom){display.textContent="ادخلي بارتي أو أنشئي واحدة لبدء اللعب 🎉";status.textContent="";zone.hidden=true;document.getElementById("voteCount").textContent="";detail.textContent="";return;}
+  if(!story){display.textContent=stories.length?"اضغطي السالفة التالية لبدء اللعب 🎮":"ما فيه سوالف في هذه البارتي حتى الآن 💙";status.textContent="";zone.hidden=true;document.getElementById("voteCount").textContent="";detail.textContent="";return;}
+  display.textContent=story.text;
+  status.textContent="✍️ السالفة من: "+story.name;
+  if(story.revealed) status.textContent+=story.isTrue?" — ✅ سالفة صدق":" — ❌ سالفة تأليف";
+  const votes=Object.values(story.votes||{});
+  const trueVotes=votes.filter(v=>(typeof v==="string"?v:v.choice)==="صدق").length;
+  const falseVotes=votes.filter(v=>(typeof v==="string"?v:v.choice)==="كذب").length;
+  document.getElementById("voteCount").textContent="عدد المصوتين: "+votes.length+" | 👍 صدق: "+trueVotes+" | 👎 كذب: "+falseVotes;
+  if(votes.length){
+    const lines=votes.map(v=>{const vote=typeof v==="string"?{choice:v,name:"لا يوجد اسم محفوظ"}:v;let line="👤 "+(vote.name||"لا يوجد اسم")+" — "+(vote.choice||"؟");if(story.revealed){const correct=vote.choice===(story.isTrue?"صدق":"كذب");line+=correct?" ✅ إجابة صحيحة":" ❌ إجابة خاطئة";}return line;});
+    detail.innerHTML="<strong>🗳️ من صوّت:</strong><br>"+lines.map(x=>escapeHtml(x)).join("<br>");
+  }else detail.textContent="ما حد صوّت حتى الآن.";
+  zone.hidden=false;
+  const reveal=document.getElementById("revealBtn");
+  if(reveal){reveal.hidden=!(activeRoom && isRoomOwner && !story.revealed);}
+  const nextBtn=document.getElementById("nextStoryBtn");
+  if(nextBtn) nextBtn.hidden=!(activeRoom && isRoomOwner);
+}
+function moderateText(value){
+  // فلتر أولي للكلمات المسيئة الشائعة بالعربية والإنجليزية؛ يمكن توسيعه لاحقًا.
+  const terms=["كس ام","كسأم","كسم","قحبة","شرموطة","منيوكة","زب","طيز","عرص","كلب ابن","ابن الكلب","fuck","shit","bitch","asshole","motherfucker"];
+  const normalized=String(value).toLowerCase().replace(/[ًٌٍَُِّْـ]/g,"").replace(/[إأآ]/g,"ا").replace(/ة/g,"ه");
+  const found=terms.find(term=>normalized.includes(term.toLowerCase().replace(/[إأآ]/g,"ا").replace(/ة/g,"ه")));
+  return found?"كلمات مسيئة":null;
+}
+function escapeHtml(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function listenToRoom(){
+  detachRoomListeners(); stories=[];currentKey=null;
+  if(!activeRoom){renderPlayers();renderStory();return;}
+  const base=roomBase();
+  watch(base.child("stories"),snapshot=>{
+    const data=snapshot.val()||{};
+    stories=Object.entries(data).map(([key,value])=>({...value,key})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+    renderPlayers();renderStory();
+  });
+  watch(base.child("currentKey"),snapshot=>{currentKey=snapshot.val();renderStory();});
+  watch(base.child("closed"),snapshot=>{
+    if(snapshot.val()===true){alert("تم إغلاق هذه البارتي.");activeRoom=null;isRoomOwner=false;detachRoomListeners();updatePartyUI();listenToRoom();}
+  });
+  setConnection("🟢 متصل ببارتي "+activeRoom,true);
+}
+async function createParty(){
+  if(!db){alert("قاعدة البيانات غير متصلة.");return;}
+  try{
+    let code, snap;
+    do{code=Math.random().toString(36).slice(2,8).toUpperCase();snap=await db.ref("parties/"+code).once("value");}while(snap.exists());
+    await db.ref("parties/"+code).set({createdAt:Date.now(),ownerToken:roomOwnerToken,closed:false,stories:{},currentKey:null});
+    activeRoom=code;isRoomOwner=true;updatePartyUI();listenToRoom();
+  }catch(error){alert("تعذر إنشاء البارتي: "+error.message);}
+}
+async function joinParty(){
+  const code=document.getElementById("joinCode").value.trim().toUpperCase();
+  if(!/^[A-Z0-9]{6}$/.test(code)){alert("اكتبي كود البارتي المكوّن من 6 أحرف أو أرقام.");return;}
+  try{
+    const snap=await db.ref("parties/"+code).once("value");
+    if(!snap.exists()||snap.val().closed){alert("البارتي غير موجودة أو تم إغلاقها.");return;}
+    activeRoom=code;isRoomOwner=snap.val().ownerToken===roomOwnerToken;updatePartyUI();listenToRoom();
+  }catch(error){alert("تعذر دخول البارتي: "+error.message);}
+}
+async function closeParty(){
+  if(!activeRoom||!isRoomOwner){alert("إغلاق البارتي متاح لمن أنشأها فقط.");return;}
+  if(!confirm("متأكدة؟ سيتم حذف البارتي وكل سوالفها وتصويتها نهائيًا."))return;
+  const code=activeRoom;
+  try{
+    await db.ref("parties/"+code).remove();
+    activeRoom=null;isRoomOwner=false;stories=[];currentKey=null;detachRoomListeners();updatePartyUI();listenToRoom();
+    setConnection("تم إغلاق البارتي وحذف سوالفها.",true);
+  }catch(error){alert("تعذر إغلاق البارتي: "+error.message+" — تحققي من صلاحيات Firebase.");}
+}
+document.getElementById("storyForm").addEventListener("submit",async event=>{
+  event.preventDefault();if(busy)return;
+  const name=document.getElementById("playerName").value.trim(), text=document.getElementById("storyText").value.trim(), message=document.getElementById("formMessage");
+  if(!activeRoom){message.textContent="أنشئي بارتي أو ادخلي واحدة أولًا.";return;}
+  if(!name||!text){message.textContent="اكتبي اسمك والسالفة أولًا.";return;}
+  const moderation=moderateText(name+" "+text);
+  if(moderation){message.textContent="خلّينا نحافظ على جو محترم 💙 عدّلي النص واحذفي الكلمات غير المناسبة: "+moderation;return;}
+  if(selectedType===null){message.textContent="اختاري هل السالفة صدق أو كذب.";return;}
+  if(!db){message.textContent="Firebase غير متصل. تحققي من الاتصال.";return;}
+  busy=true;const submit=document.getElementById("submitBtn");submit.disabled=true;submit.textContent="⏳ جاري الإرسال...";message.textContent="";
+  try{
+    const ref=db.ref(roomPath("stories")).push();
+    await ref.set({name,text,isTrue:selectedType,createdAt:Date.now(),votes:{},revealed:false});
+    const current=await db.ref(roomPath("currentKey")).once("value");if(!current.val())await db.ref(roomPath("currentKey")).set(ref.key);
+    document.getElementById("storyText").value="";selectedType=null;document.getElementById("trueBtn").classList.remove("selected");document.getElementById("falseBtn").classList.remove("selected");message.textContent="✅ انرسلت سالفتك في البارتي!";
+  }catch(error){console.error(error);message.textContent="❌ فشل الإرسال: "+error.message;}
+  finally{busy=false;submit.disabled=false;submit.textContent="🚀 إرسال السالفة";}
+});
+async function vote(choice){
+  if(!activeRoom||!currentKey)return;
+  try{
+    const story=stories.find(s=>s.key===currentKey);if(!story||story.revealed){alert("التصويت مغلق بعد كشف الحقيقة.");return;}
+    const name=document.getElementById("playerName").value.trim();if(!name){alert("اكتبي اسمك في خانة اسم اللاعب قبل التصويت حتى يظهر اسمك.");document.getElementById("playerName").focus();return;}
+    let voterId=localStorage.getItem("aqqzeh_voter_id");if(!voterId){voterId="v_"+Math.random().toString(36).slice(2)+Date.now().toString(36);localStorage.setItem("aqqzeh_voter_id",voterId);}
+    await db.ref(roomPath("stories")+"/"+currentKey+"/votes/"+voterId).set({choice,name,at:Date.now()});
+  }catch(error){alert("تعذر تسجيل التصويت: "+error.message);}
+}
+async function revealTruth(){if(!activeRoom||!currentKey)return;if(!isRoomOwner){alert("كشف الحقيقة متاح لصاحب البارتي فقط 💙");return;}try{await db.ref(roomPath("stories")+"/"+currentKey+"/revealed").set(true);}catch(error){alert("تعذر كشف الحقيقة: "+error.message);}}
+async function nextStory(){
+  if(!activeRoom){alert("ادخلي بارتي أولًا.");return;}if(!isRoomOwner){alert("الانتقال للسالفة التالية متاح لصاحب البارتي فقط 💙");return;}if(!stories.length){alert("ما فيه سوالف حتى الآن!");return;}
+  const index=stories.findIndex(s=>s.key===currentKey), next=stories[(index+1)%stories.length];
+  try{await db.ref(roomPath("currentKey")).set(next.key);}catch(error){alert("تعذر تغيير السالفة: "+error.message);}
+}
+function showResults(){
+  const story=stories.find(s=>s.key===currentKey);if(!story){alert("ما فيه سالفة حالية.");return;}
+  const votes=Object.values(story.votes||{}), truth=story.isTrue?"صدق":"كذب";
+  const right=votes.filter(v=>(typeof v==="string"?v:v.choice)===truth).length;
+  const wrong=votes.length-right;
+  const voterNames=votes.map(v=>{const x=typeof v==="string"?{choice:v,name:"اسم غير محفوظ"}:v;return (x.name||"اسم غير محفوظ")+" — "+x.choice+(!story.revealed?"":" — "+(x.choice===truth?"صح":"خطأ"));}).join("\n");
+  alert("نتائج التصويت\nعدد المصوتين: "+votes.length+"\nصدق: "+votes.filter(v=>(typeof v==="string"?v:v.choice)==="صدق").length+"\nكذب: "+votes.filter(v=>(typeof v==="string"?v:v.choice)==="كذب").length+(story.revealed?"\nإجابات صحيحة: "+right+"\nإجابات خاطئة: "+wrong:"")+"\n\nالمصوتون:\n"+(voterNames||"لا يوجد تصويت"));
+}
+try{
+  if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
+  db=firebase.database();
+  db.ref(".info/connected").on("value",snapshot=>{if(snapshot.val()===true)setConnection("🟢 متصل بقاعدة البيانات",true);else setConnection("🟡 جاري الاتصال أو انقطع الاتصال...");});
+  updatePartyUI();listenToRoom();
+}catch(error){console.error(error);setConnection("❌ خطأ في إعداد Firebase: "+error.message);}
+</script>
+</body>
+</html>
